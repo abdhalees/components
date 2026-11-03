@@ -3,7 +3,15 @@
 
 @use 'sass:map';
 @use '../internal/styles/tokens' as awsui;
+@use '../internal/styles/style-api' as style-api;
 @use './constants' as constants;
+
+// The border is painted by `.root::after` only: its tokens stay public and `::after` inherits them from the root,
+// so no descendant of the card sees them. The radius is also read by the header and overlay buttons and the header
+// corners, and the focus ring by `.root::before`: these tokens are re-anchored as carriers on the root.
+$border-tokens: style-api.resolve((border-color, border-width), public);
+$carrier-tokens: style-api.resolve((border-radius, focus-ring-color, focus-ring-width, focus-ring-radius), carrier);
+$tokens: map.merge($border-tokens, $carrier-tokens);
 
 $variant-border-radius: (
   'embedded': awsui.$border-radius-action-card-embedded,
@@ -29,7 +37,17 @@ $variant-padding-inline: (
 
 @mixin state-border-radius($variant: 'default', $state: 'default') {
   $token: map.get($variant-border-radius, $variant);
-  @include border-radius-all($token);
+  @include border-radius-all(style-api.value($carrier-tokens, border-radius, $token));
+}
+
+// Gives `.root::after` the root's public border tokens. They are registered as non-inheriting, so without this
+// the pseudo-element would not see them.
+@mixin inherit-border-tokens {
+  @if style-api.enabled() {
+    @each $token, $property in $border-tokens {
+      #{$property}: inherit;
+    }
+  }
 }
 
 @mixin state-border-radius-all-variants($state: 'default') {
@@ -55,9 +73,9 @@ $variant-padding-inline: (
   }
 
   &:after {
-    border-color: map.get($s, 'border-color');
-    border-block-width: map.get($s, 'border-width');
-    border-inline-width: map.get($s, 'border-width');
+    border-color: style-api.value($border-tokens, border-color, map.get($s, 'border-color'));
+    border-block-width: style-api.value($border-tokens, border-width, map.get($s, 'border-width'));
+    border-inline-width: style-api.value($border-tokens, border-width, map.get($s, 'border-width'));
   }
 
   > .icon,
