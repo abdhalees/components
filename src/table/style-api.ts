@@ -1,0 +1,31 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+import { TableProps } from './interfaces';
+
+type Slot<Args> = string | ((args: Args) => string | undefined);
+
+// Style API v2
+export interface StyleClassNames<T = any> {
+  root?: string;
+  headerCell?: Slot<
+    | {
+        type: 'column';
+        column: TableProps.ColumnDefinition<T>;
+        sortable: boolean;
+        sorted: boolean;
+        sortingDescending: boolean;
+      }
+    | { type: 'group'; group: TableProps.GroupDefinition<T> }
+    | { type: 'selection' }
+  >;
+  sortingIndicator?: string;
+  // `index` counts rendered rows, including nested rows.
+  row?: Slot<{ item: T; index: number; selected: boolean }>;
+  cell?: Slot<{ type: 'data'; item: T; column: TableProps.ColumnDefinition<T> } | { type: 'selection'; item: T }>;
+  selectionCheckbox?: string;
+  selectionRadio?: string;
+}
+
+export function getStyleClassName<Args>(slot: Slot<Args> | undefined, args: Args) {
+  return typeof slot === 'function' ? slot(args) : slot;
+}
